@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+pydantic>=2
+python-multipart
+numpy
+librosa
+openai
+language_tool_python
+mutagen

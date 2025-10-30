@@ -1,0 +1,5 @@
+[build]
+  command = "npm run build:frontend"
+  publish = "dist"
+
+# The build will fail until EXAMPREP_API_BASE is provided via Netlify env vars.

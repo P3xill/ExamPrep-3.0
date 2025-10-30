@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ExamPrep — Speak with confidence</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="nav">
+      <div class="nav__inner">
+        <div class="nav__logo">
+          <a href="index.html" aria-label="ExamPrep home">ExamPrep</a>
+          <span class="nav__tag">Beta</span>
+        </div>
+        <nav class="nav__links">
+          <a href="#features">Features</a>
+          <a href="#about">About</a>
+        </nav>
+        <a class="nav__cta nav__cta--secondary" href="try.html">Sign in</a>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero" id="hero">
+        <div class="hero__inner">
+          <h1>
+            Speak with confidence.<br />
+            Master your <span class="hero__accent">exam.</span>
+          </h1>
+          <p>
+            ExamPrep helps you prepare for oral exams by analyzing your speech —
+            get instant AI feedback on fluency, pronunciation, and clarity so you know
+            exactly what to improve before the big day.
+          </p>
+          <a class="hero__cta" id="hero-cta" href="try.html">Try ExamPrep</a>
+        </div>
+      </section>
+
+      <section class="section section--features" id="features">
+        <div class="section__header">
+          <span class="section__eyebrow">How it works</span>
+          <h2>From recording to insights in minutes</h2>
+          <p>
+            Three focused steps guide every practice session so you always know what comes next—
+            capture your answer, let AI analyze the nuance, then review the progress markers that matter.
+          </p>
+        </div>
+
+        <div class="timeline">
+          <div class="timeline__axis" aria-hidden="true"></div>
+
+          <article class="timeline__item timeline__item--right timeline__item--step-1">
+            <span class="timeline__step">Step 1 — Upload audio</span>
+            <h3>Bring your voice</h3>
+            <p>
+              Record directly in the app or upload an audio file. We support the formats
+              you already use, so getting started takes seconds.
+            </p>
+          </article>
+
+          <article class="timeline__item timeline__item--left timeline__item--step-2">
+            <span class="timeline__step">Step 2 — Analysis</span>
+            <h3>Let AI do the heavy lifting</h3>
+            <p>
+              Our analysis engine breaks down fluency, pronunciation, filler words, and more,
+              giving you rich insights the moment your recording is finished.
+            </p>
+          </article>
+
+          <article class="timeline__item timeline__item--right timeline__item--step-3">
+            <span class="timeline__step">Step 3 — See progress</span>
+            <h3>Track your improvement</h3>
+            <p>
+              Compare sessions, follow your personal timeline, and see exactly where you are
+              gaining confidence so you can walk into the exam ready to deliver.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section section--about" id="about">
+        <div class="about">
+          <div class="about__intro">
+            <span class="section__eyebrow">Why ExamPrep</span>
+            <h2>Designed for the pressure of oral exams</h2>
+            <p>
+              ExamPrep captures the nuance of how you speak so you can focus on delivery.
+              We combine speech science and AI coaching to give you tailored guidance that feels
+              like a personal tutor—available whenever you need a quick confidence boost.
+            </p>
+          </div>
+          <div class="about__grid">
+            <div class="about__card">
+              <h3>Personalized insights</h3>
+              <p>
+                See metrics that matter for spoken exams: pace, clarity, filler words, and pronunciation confidence
+                are all tracked session after session.
+              </p>
+            </div>
+            <div class="about__card">
+              <h3>Actionable coaching</h3>
+              <p>
+                Turn analytics into progress with AI-generated practice prompts, key mistakes summaries, and warm-up drills
+                tuned to your weaknesses.
+              </p>
+            </div>
+            <div class="about__card">
+              <h3>Progress you can trust</h3>
+              <p>
+                Every exercise is stored securely on your device, giving you a transparent record of improvement
+                you can revisit before the exam.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <footer class="footer">
+      <span>© <span id="year"></span> ExamPrep. All rights reserved.</span>
+    </footer>
+
+    <script>
+      document.getElementById('year').textContent = new Date().getFullYear();
+
+      const items = document.querySelectorAll('.timeline__item');
+      const observer = new IntersectionObserver(
+        entries => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('is-visible');
+              observer.unobserve(entry.target);
+            }
+          });
+        },
+        { threshold: 0.4 }
+      );
+
+      items.forEach(item => observer.observe(item));
+
+    </script>
+  </body>
+</html>

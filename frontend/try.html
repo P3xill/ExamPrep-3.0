@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ExamPrep — Analyze your speech</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="page-app" data-api-base="" data-clerk-publishable-key="pk_test_d29ya2luZy1rYW5nYXJvby0yNi5jbGVyay5hY2NvdW50cy5kZXYk" data-require-auth="false">
+    <div class="auth-gate" id="auth-gate">
+      <div class="auth-card">
+        <h1>Sign in to ExamPrep</h1>
+        <p class="auth-note">
+          Create an account with email and password or continue with Google to unlock instant speech analysis.
+        </p>
+        <div id="sign-in-root"></div>
+      </div>
+    </div>
+
+    <div id="app-shell" hidden>
+      <header class="nav nav--sub">
+        <div class="nav__inner">
+          <div class="nav__logo">
+            <a href="index.html" aria-label="Go back to ExamPrep home">ExamPrep</a>
+            <span class="nav__tag">Beta</span>
+          </div>
+          <nav class="nav__links">
+            <a href="index.html#features">Features</a>
+            <a href="index.html#about">About</a>
+          </nav>
+          <div class="nav__auth">
+            <div id="userButton"></div>
+            <button class="nav__cta nav__cta--secondary" id="signOutBtn" type="button" hidden>Sign out</button>
+          </div>
+        </div>
+      </header>
+
+      <main class="app">
+        <section class="app__intro">
+          <div class="app__badge">Speech analyzer</div>
+          <h1>Upload, analyze, improve</h1>
+          <p>
+            Drop an audio file or record directly to see how ExamPrep evaluates fluency, pronunciation, correctness,
+            and overall clarity. Everything runs locally against your backend.
+          </p>
+          <div class="app__steps">
+            <div>
+              <span>1</span>
+              <p>Select a WAV / MP3 / M4A file up to 3 minutes.</p>
+            </div>
+            <div>
+              <span>2</span>
+              <p>Choose whether to include advanced diagnostics before analyzing.</p>
+            </div>
+            <div>
+              <span>3</span>
+              <p>Review scores, highlights, and AI feedback instantly after processing.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="app__workspace">
+          <div class="cards">
+            <section class="card" id="card-upload">
+              <header class="card__header">
+                <h2>Upload your speech</h2>
+                <p class="note">Supported formats: WAV, MP3, M4A — maximum length 3 minutes (180 seconds).</p>
+              </header>
+              <div class="drop" id="drop">
+                <input type="file" id="file" accept="audio/*" />
+                <div class="drop__content">
+                  <strong>Drop audio here</strong>
+                  <span>…or click to browse your files</span>
+                </div>
+              </div>
+              <div class="row upload-actions">
+                <div id="fileInfo" class="subtitle">No file selected</div>
+                <button id="analyzeBtn" class="btn" disabled>Analyze</button>
+              </div>
+              <label class="toggle" id="diagToggleWrap">
+                <input type="checkbox" id="diagToggle" />
+                <span>Include advanced diagnostics (slightly slower)</span>
+              </label>
+            </section>
+
+            <section class="card card--progress" id="card-processing" style="display:none;">
+              <header class="card__header">
+                <h2>Analyzing your speech</h2>
+                <p class="note">We’re running transcription, metrics, and feedback generation.</p>
+              </header>
+              <div class="progress"><div class="bar" id="bar"></div></div>
+              <div class="steps" id="steps">
+                <div class="step" data-step="prep">Prep</div>
+                <div class="step" data-step="asr">ASR</div>
+                <div class="step" data-step="vad">VAD</div>
+                <div class="step" data-step="metrics">Metrics</div>
+                <div class="step" data-step="llm">AI tips</div>
+              </div>
+              <p class="note">The analysis runs locally against your backend at <code>http://127.0.0.1:5173</code>.</p>
+            </section>
+
+            <section class="card card--results" id="card-results" style="display:none;">
+              <header class="card__header">
+                <h2>Results</h2>
+                <p class="note" id="summary">Your AI feedback summary will appear here.</p>
+              </header>
+              <div class="scorewrap">
+                <div class="score" id="score" style="--val:0"><span id="scoreNum">0</span></div>
+                <div class="scorewrap__extras">
+                  <div class="chips" id="tags"></div>
+                  <div class="note" id="timing"></div>
+                </div>
+              </div>
+
+              <div class="ai-summary" id="aiSummary" style="display:none;">
+                <p class="ai-summary-text" id="aiSummaryText"></p>
+              </div>
+
+              <div class="metric">
+                <div class="metric-head">
+                  <h3>Fluency</h3>
+                  <span class="badge" id="fluLabel">—</span>
+                </div>
+                <div class="barline"><i id="fluBar"></i></div>
+                <div class="hint" id="fluVerdict"></div>
+                <div class="chips" id="fluChips"></div>
+              </div>
+
+              <div class="metric">
+                <div class="metric-head">
+                  <h3>Pronunciation</h3>
+                  <span class="badge" id="proLabel">—</span>
+                </div>
+                <div class="barline"><i id="proBar"></i></div>
+                <div class="hint" id="proVerdict"></div>
+                <div class="chips" id="proChips"></div>
+              </div>
+
+              <div class="metric">
+                <div class="metric-head">
+                  <h3>Correctness</h3>
+                  <span class="badge" id="corLabel">—</span>
+                </div>
+                <div class="barline"><i id="corBar"></i></div>
+                <div class="hint" id="corVerdict"></div>
+                <div class="chips" id="corChips"></div>
+              </div>
+
+              <div class="practice" id="practiceCard" style="display:none;">
+                <div class="metric-head">
+                  <h3>Practice focus</h3>
+                </div>
+                <ol class="practice-list" id="practiceList"></ol>
+              </div>
+
+              <div class="mistakes" id="mistakeCard" style="display:none;">
+                <div class="metric-head">
+                  <h3>Key mistakes</h3>
+                </div>
+                <div class="mistake-list" id="mistakeList"></div>
+              </div>
+            </section>
+
+            <section class="card card--error" id="card-error" style="display:none;">
+              <header class="card__header">
+                <h2>Something went wrong</h2>
+                <p class="err" id="errorMsg">We couldn’t analyze that file. Please try again.</p>
+              </header>
+            </section>
+          </div>
+        </section>
+      </main>
+
+      <footer class="footer footer--sub">
+        <span>© <span id="year"></span> ExamPrep. Built for confident oral exams.</span>
+      </footer>
+    </div>
+
+    <script>
+      const authGate = document.getElementById('auth-gate');
+      const appShell = document.getElementById('app-shell');
+      const signInRoot = document.getElementById('sign-in-root');
+      const userButton = document.getElementById('userButton');
+      const signOutBtn = document.getElementById('signOutBtn');
+      const requireAuth =
+        (document.body.getAttribute('data-require-auth') || '').trim().toLowerCase() === 'true';
+
+      let signInMounted = false;
+      let userButtonMounted = false;
+
+      document.getElementById('year').textContent = new Date().getFullYear();
+
+      const api = resolveApi();
+      const MAX_DURATION_SEC = 180;
+      const drop = document.getElementById('drop');
+      const fileInput = document.getElementById('file');
+      const fileInfo = document.getElementById('fileInfo');
+      const analyzeBtn = document.getElementById('analyzeBtn');
+      const cardUpload = document.getElementById('card-upload');
+      const cardProc = document.getElementById('card-processing');
+      const cardRes = document.getElementById('card-results');
+      const cardErr = document.getElementById('card-error');
+      const bar = document.getElementById('bar');
+      const steps = [...document.querySelectorAll('.step')];
+      const diagToggle = document.getElementById('diagToggle');
+      const diagToggleWrap = document.getElementById('diagToggleWrap');
+      const practiceCard = document.getElementById('practiceCard');
+      const mistakeCard = document.getElementById('mistakeCard');
+      const practiceList = document.getElementById('practiceList');
+      const mistakeList = document.getElementById('mistakeList');
+      const aiSummary = document.getElementById('aiSummary');
+      const aiSummaryText = document.getElementById('aiSummaryText');
+
+      let selectedFile = null;
+      let fileDuration = null;
+
+      function resolveClerkKey() {
+        const attr = (document.body.getAttribute('data-clerk-publishable-key') || '').trim();
+        const globalKey =
+          typeof window !== 'undefined' && window.CLERK_PUBLISHABLE_KEY
+            ? String(window.CLERK_PUBLISHABLE_KEY).trim()
+            : '';
+        return attr || globalKey;
+      }
+
+      async function loadClerkScript(publishableKey) {
+        if (window.Clerk && window.Clerk.load) return;
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.async = true;
+          script.crossOrigin = 'anonymous';
+          script.setAttribute('data-clerk-publishable-key', publishableKey);
+          script.src = 'https://cdn.jsdelivr.net/npm/@clerk/clerk-js@4/dist/clerk.browser.js';
+          script.onload = resolve;
+          script.onerror = () => reject(new Error('Failed to load Clerk JS'));
+          document.head.appendChild(script);
+        });
+      }
+
+      function activateAppWithoutAuth() {
+        if (authGate) authGate.style.display = 'none';
+        if (appShell) appShell.hidden = false;
+        if (signInRoot) {
+          signInRoot.innerHTML = '';
+          signInMounted = false;
+        }
+        if (signOutBtn) signOutBtn.hidden = true;
+      }
+
+      async function initAuth() {
+        const publishableKey = resolveClerkKey();
+        if (!requireAuth || !publishableKey) {
+          console.warn('Clerk publishable key missing. Auth is disabled.');
+          activateAppWithoutAuth();
+          return;
+        }
+        try {
+          await loadClerkScript(publishableKey);
+          if (!window.Clerk || !window.Clerk.load) throw new Error('Clerk not available');
+          await window.Clerk.load();
+          if (signOutBtn) {
+            signOutBtn.addEventListener('click', () => window.Clerk.signOut());
+          }
+          window.Clerk.addListener(({ session }) => handleAuthState(session));
+          await handleAuthState(window.Clerk.session);
+        } catch (err) {
+          console.error('Unable to initialize Clerk', err);
+          activateAppWithoutAuth();
+        }
+      }
+
+      async function handleAuthState(session) {
+        if (!session) {
+          showSignIn();
+          return;
+        }
+        showAppShell();
+      }
+
+      function showSignIn() {
+        if (appShell) appShell.hidden = true;
+        if (authGate) authGate.style.display = 'flex';
+        if (signOutBtn) signOutBtn.hidden = true;
+        if (userButton) {
+          userButton.innerHTML = '';
+          userButtonMounted = false;
+        }
+        if (!signInRoot) return;
+        if (signInMounted) return;
+        signInRoot.innerHTML = '';
+        window.Clerk.mountSignIn(signInRoot, {
+          appearance: {
+            layout: {
+              socialButtonsPlacement: 'top',
+              socialButtonsVariant: 'iconButton',
+              showOptionalFields: true,
+            },
+            variables: {
+              colorPrimary: '#2f66f6',
+              colorText: '#0d1b41',
+              colorBackground: '#ffffff',
+              borderRadius: '22px',
+              fontFamily: 'Inter, "Segoe UI", sans-serif',
+              colorAlphaShade: 'rgba(47,102,246,0.08)',
+              colorInputBackground: '#eef3ff',
+              colorInputText: '#0d1b41',
+              colorDanger: '#d64545',
+            },
+            elements: {
+              card: {
+                boxShadow: '0 28px 52px rgba(47,102,246,0.18)',
+                border: '1px solid rgba(47,102,246,0.18)',
+                width: '360px',
+                maxWidth: '100%',
+                backgroundColor: '#f7faff',
+                padding: '32px 28px',
+              },
+              headerTitle: {
+                fontSize: '26px',
+                fontWeight: '700',
+                color: '#0d1b41',
+              },
+              headerSubtitle: {
+                color: '#586189',
+                fontSize: '15px',
+              },
+              socialButtons: {
+                marginBottom: '12px',
+              },
+              socialButton: {
+                borderRadius: '14px',
+                border: '1px solid rgba(47,102,246,0.18)',
+              },
+              formButtonPrimary: {
+                backgroundColor: '#2f66f6',
+                fontWeight: '600',
+                letterSpacing: '0.01em',
+                boxShadow: '0 18px 34px rgba(47,102,246,0.28)',
+                borderRadius: '14px',
+              },
+              formButtonPrimary__hover: {
+                backgroundColor: '#1f43cf',
+              },
+              formFieldInput: {
+                borderRadius: '14px',
+                borderColor: 'rgba(47,102,246,0.22)',
+                boxShadow: 'none',
+                backgroundColor: '#eef3ff',
+              },
+              formFieldLabel: {
+                fontWeight: '600',
+                color: '#0d1b41',
+              },
+              footerActionLink: {
+                color: '#2f66f6',
+                fontWeight: '600',
+              },
+            },
+          },
+          afterSignInUrl: 'index.html',
+          afterSignUpUrl: 'index.html',
+          routing: 'hash',
+        });
+        signInMounted = true;
+      }
+
+      function showAppShell() {
+        if (authGate) authGate.style.display = 'none';
+        if (appShell) appShell.hidden = false;
+        if (signInRoot) {
+          signInRoot.innerHTML = '';
+          signInMounted = false;
+        }
+        if (signOutBtn) signOutBtn.hidden = false;
+        if (userButton && !userButtonMounted) {
+          userButton.innerHTML = '';
+          if (window.Clerk && window.Clerk.mountUserButton) {
+            window.Clerk.mountUserButton(userButton, {
+              afterSignOutUrl: 'index.html',
+              appearance: {
+                variables: { colorPrimary: '#2f66f6' },
+              },
+            });
+            userButtonMounted = true;
+          } else {
+            userButtonMounted = false;
+          }
+        }
+      }
+
+      function setup() {
+        toggleCards('upload');
+        if (!drop || !fileInput || !fileInfo || !analyzeBtn) return;
+        drop.addEventListener('click', () => fileInput.click());
+        drop.addEventListener('dragenter', onDragEnter);
+        drop.addEventListener('dragover', onDragOver);
+        drop.addEventListener('dragleave', onDragLeave);
+        drop.addEventListener('drop', onDrop);
+        fileInput.addEventListener('change', onFileInput);
+        analyzeBtn.addEventListener('click', onAnalyze);
+        if (diagToggle) {
+          diagToggle.addEventListener('change', () => {
+            if (diagToggle.checked && diagToggleWrap) {
+              diagToggleWrap.setAttribute('data-enabled', 'true');
+            } else if (diagToggleWrap) {
+              diagToggleWrap.removeAttribute('data-enabled');
+            }
+          });
+        }
+      }
+
+      function onDragEnter(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+        drop.classList.add('drag');
+      }
+
+      function onDragOver(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+        drop.classList.add('drag');
+      }
+
+      function onDragLeave(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        drop.classList.remove('drag');
+      }
+
+      function onDrop(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        drop.classList.remove('drag');
+        extractFile(e.dataTransfer)
+          .then(file => {
+            if (file) {
+              handleFile(file);
+            } else {
+              showError('We could not read that file. Please try uploading it instead.');
+            }
+          })
+          .catch(err => {
+            console.warn('Drop failed', err);
+            showError('We could not read that file. Please try uploading it instead.');
+          });
+      }
+
+      function onFileInput(e) {
+        const f = e.target.files && e.target.files[0];
+        if (f) handleFile(f);
+      }
+
+      function handleFile(file) {
+        resetError();
+        if (!isAudio(file)) {
+          showError('Please provide an audio file (wav, mp3, m4a).');
+          return;
+        }
+        selectedFile = file;
+        fileInfo.textContent = `${file.name} · ${(file.size / 1024 / 1024).toFixed(2)} MB`;
+        analyzeBtn.disabled = true;
+        duration(file)
+          .then(d => {
+            fileDuration = d;
+            if (d > MAX_DURATION_SEC) {
+              showError(`Audio is ${Math.round(d)} seconds. Limit is ${MAX_DURATION_SEC}.`);
+              analyzeBtn.disabled = true;
+              return;
+            }
+            analyzeBtn.disabled = false;
+          })
+          .catch(() => {
+            analyzeBtn.disabled = false;
+          });
+      }
+
+      async function getAuthToken() {
+        if (!requireAuth) return null;
+        if (!window.Clerk || !window.Clerk.session) return null;
+        try {
+          return await window.Clerk.session.getToken({ template: 'default' });
+        } catch (err) {
+          console.warn('Unable to fetch Clerk session token', err);
+          return null;
+        }
+      }
+
+      async function onAnalyze() {
+        if (!selectedFile) return;
+        resetError();
+        toggleCards('proc');
+        setProgress(0);
+        highlightStep();
+
+        const token = await getAuthToken();
+        if (window.Clerk && window.Clerk.session && !token) {
+          if (requireAuth) {
+            showError('We could not confirm your session. Please sign in again.');
+            toggleCards('upload');
+            return;
+          }
+        }
+
+        const form = new FormData();
+        form.append('file', selectedFile);
+        const endpoint = new URL(api);
+        if (diagToggle && diagToggle.checked) {
+          endpoint.searchParams.set('diagnostics', '1');
+        }
+
+        const headers = {};
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        fetch(endpoint.toString(), { method: 'POST', body: form, headers })
+          .then(async res => {
+            if (res.ok) return res.json();
+            let detailMessage = '';
+            try {
+              const data = await res.json();
+              detailMessage =
+                typeof data === 'string'
+                  ? data
+                  : data && data.detail
+                  ? String(data.detail)
+                  : '';
+            } catch (parseErr) {
+              console.debug('Could not parse error response', parseErr);
+            }
+            const error = new Error(detailMessage || `HTTP ${res.status}`);
+            error.status = res.status;
+            throw error;
+          })
+          .then(payload => {
+            renderResults(payload);
+            toggleCards('res');
+          })
+          .catch(err => {
+            console.error('ExamPrep analysis failed', err);
+            showError(friendlyErrorMessage(err && err.message ? err.message : ''));
+          })
+          .finally(() => {
+            setProgress(0);
+            steps.forEach(step => step.classList.remove('on'));
+          });
+      }
+
+      function toggleCards(state) {
+        cardUpload.style.display = state === 'upload' || state === 'error' ? 'block' : 'none';
+        cardProc.style.display = state === 'proc' ? 'block' : 'none';
+        cardRes.style.display = state === 'res' ? 'block' : 'none';
+        cardErr.style.display = state === 'error' ? 'block' : 'none';
+      }
+
+      function setProgress(val) {
+        bar.style.width = `${val}%`;
+      }
+
+      function highlightStep(key) {
+        steps.forEach(step => step.classList.toggle('on', step.dataset.step === key));
+      }
+
+      function renderResults(payload) {
+        if (!payload) {
+          showError('No results returned.');
+          return;
+        }
+        console.log('ExamPrep analysis payload', payload);
+        const score = Number(payload.overall_score) || 0;
+        const metrics = payload.metrics || {};
+        const diagnostics = payload.diagnostics || {};
+        const analysis = payload.analysis || {};
+        const verdicts = analysis.verdicts || {};
+        const summary = String(analysis.overall_summary || '').trim();
+        const tips = Array.isArray(analysis.tips) ? analysis.tips.filter(Boolean) : [];
+        const totalTime = Number(payload.processing_time_sec);
+
+        const scoreDial = document.getElementById('score');
+        if (scoreDial) scoreDial.style.setProperty('--val', clamp(score, 0, 100));
+        const scoreNum = document.getElementById('scoreNum');
+        if (scoreNum) scoreNum.textContent = Math.round(clamp(score, 0, 100));
+        const summaryEl = document.getElementById('summary');
+        if (summaryEl) summaryEl.textContent = summary || 'Here is your analysis.';
+        chips('tags', tips);
+        const timingEl = document.getElementById('timing');
+        if (timingEl) {
+          timingEl.textContent = Number.isFinite(totalTime) ? `Total ${totalTime.toFixed(1)}s` : '';
+        }
+
+        const aiText = String(analysis.ai_summary || '').trim();
+        if (aiText) {
+          aiSummary.style.display = 'block';
+          aiSummaryText.textContent = aiText;
+        } else {
+          aiSummary.style.display = 'none';
+        }
+
+        console.log('metrics summary', metrics);
+        console.log('diagnostics summary', diagnostics);
+        console.log('verdicts summary', verdicts);
+
+        safe(() => setMetric('flu', metrics.fluency, diagnostics.fluency, verdicts.fluency), 'fluency metric');
+        safe(
+          () => setMetric('pro', metrics.pronunciation, diagnostics.pronunciation, verdicts.pronunciation),
+          'pronunciation metric'
+        );
+        safe(
+          () => setMetric('cor', metrics.correctness, diagnostics.correctness, verdicts.correctness),
+          'correctness metric'
+        );
+
+        safe(() => renderPracticePriorities(analysis.practice_priorities), 'practice priorities');
+        safe(() => renderMistakeHighlights(analysis.mistake_highlights), 'mistake highlights');
+      }
+
+      function setMetric(prefix, metric = {}, diagnostic = {}, verdict = {}) {
+        metric = metric || {};
+        diagnostic = diagnostic || {};
+        verdict = verdict || {};
+        let score = Number(metric.score);
+        if (!Number.isFinite(score) && diagnostic) {
+          if (prefix === 'pro' && Number.isFinite(Number(diagnostic.clarity_score))) {
+            score = Number(diagnostic.clarity_score);
+          } else if (prefix === 'cor' && Number.isFinite(Number(diagnostic.score))) {
+            score = Number(diagnostic.score);
+          }
+        }
+        score = clamp(Number.isFinite(score) ? score : 0, 0, 100);
+        const barEl = document.getElementById(`${prefix}Bar`);
+        if (barEl) barEl.style.width = `${score}%`;
+        const label = verdict.label || metric.label || scoreToLabel(score);
+        setBadge(`${prefix}Label`, label);
+        const reason = String(verdict.reason || '').trim();
+        const focus = String(verdict.focus || '').trim();
+        const verdictText = [reason, focus].filter(Boolean).join(' · ');
+        const verdictEl = document.getElementById(`${prefix}Verdict`);
+        if (verdictEl) verdictEl.textContent = verdictText || 'Feedback coming soon.';
+        const adv = buildAdvancedChips(prefix, diagnostic);
+        chips(`${prefix}Chips`, adv);
+      }
+
+      function renderPracticePriorities(priorities) {
+        if (!practiceList || !practiceCard) return;
+        practiceList.innerHTML = '';
+        if (!Array.isArray(priorities) || !priorities.length) {
+          practiceCard.style.display = 'none';
+          return;
+        }
+        practiceCard.style.display = 'grid';
+        priorities.slice(0, 3).forEach(item => {
+          if (!item) return;
+          const li = document.createElement('li');
+          const skill = (item.skill || '').trim();
+          const focus = (item.focus || '').trim();
+          const why = (item.why || '').trim();
+          const action = (item.action || '').trim();
+          const header = skill ? `<strong>${escapeHtml(skill)}</strong> ` : '';
+          li.innerHTML = `${header}${escapeHtml(focus)}<br><small>${escapeHtml(why)}</small><br><em>${escapeHtml(
+            action
+          )}</em>`;
+          practiceList.appendChild(li);
+        });
+      }
+
+      function renderMistakeHighlights(highlights) {
+        if (!mistakeList || !mistakeCard) return;
+        mistakeList.innerHTML = '';
+        if (!Array.isArray(highlights) || !highlights.length) {
+          mistakeCard.style.display = 'none';
+          return;
+        }
+        mistakeCard.style.display = 'grid';
+        highlights.slice(0, 3).forEach(item => {
+          if (!item) return;
+          const wrap = document.createElement('div');
+          wrap.className = 'mistake-item';
+          const excerpt = escapeHtml(item.excerpt || '');
+          const issue = escapeHtml(item.issue || '');
+          const fix = escapeHtml(item.fix || '');
+          const excerptHtml = excerpt ? `<span>${excerpt}</span>` : '';
+          wrap.innerHTML = `<strong>${issue}</strong>${excerptHtml}<em>${fix}</em>`;
+          mistakeList.appendChild(wrap);
+        });
+      }
+
+      function buildAdvancedChips(prefix, diag) {
+        if (!diag) return [];
+        const results = [];
+        if (prefix === 'flu') {
+          if (isNumber(diag.wpm)) results.push(`${fmt(diag.wpm)} WPM`);
+          if (isNumber(diag.pause_rate_per_min)) results.push(`${fmt(diag.pause_rate_per_min, 1)} pauses/min`);
+          if (isNumber(diag.avg_pause_sec)) results.push(`${fmt(diag.avg_pause_sec, 1)}s avg pause`);
+          if (isNumber(diag.fillers_per_min)) results.push(`${fmt(diag.fillers_per_min, 1)} fillers/min`);
+          if (diag.claimed_fluent_variant) results.push(`${diag.claimed_fluent_variant} fluent`);
+        } else if (prefix === 'pro') {
+          if (isNumber(diag.clarity_score)) results.push(`Clarity ${fmt(diag.clarity_score)}`);
+          if (isNumber(diag.low_conf_token_pct)) results.push(`${fmt(diag.low_conf_token_pct, 1)}% low-confidence`);
+          if (isNumber(diag.unstable_token_pct)) results.push(`${fmt(diag.unstable_token_pct, 1)}% unstable`);
+          if (isNumber(diag.signal_score)) results.push(`Signal ${fmt(diag.signal_score)}`);
+          if (diag.articulation_flag) results.push('Watch articulation');
+          if (diag.synthetic_logprobs) results.push('Limited ASR confidence');
+        } else if (prefix === 'cor') {
+          if (isNumber(diag.grammar_errors_per_100w)) results.push(`${fmt(diag.grammar_errors_per_100w, 1)} grammar/100w`);
+          if (isNumber(diag.spelling_errors_per_100w)) results.push(`${fmt(diag.spelling_errors_per_100w, 1)} spelling/100w`);
+          if (diag.cefr_band) results.push(`CEFR ${diag.cefr_band}`);
+          if (Array.isArray(diag.top_error_types)) {
+            diag.top_error_types.filter(Boolean).slice(0, 2).forEach(t => results.push(String(t)));
+          }
+        }
+        return results.slice(0, 4);
+      }
+
+      function scoreToLabel(score) {
+        if (!Number.isFinite(score)) score = 0;
+        if (score >= 85) return 'Excellent';
+        if (score >= 72) return 'Strong';
+        if (score >= 58) return 'Developing';
+        return 'Needs Work';
+      }
+
+      function setBadge(id, text) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = text ? String(text) : '—';
+      }
+
+      function isAudio(file) {
+        if (!file || !file.type) return false;
+        return file.type.startsWith('audio/') || /\.(wav|mp3|m4a)$/i.test(file.name || '');
+      }
+
+      function duration(file) {
+        return new Promise((resolve, reject) => {
+          try {
+            const audio = document.createElement('audio');
+            const url = URL.createObjectURL(file);
+            audio.preload = 'metadata';
+            audio.src = url;
+            audio.onloadedmetadata = () => {
+              URL.revokeObjectURL(url);
+              resolve(audio.duration);
+            };
+            audio.onerror = () => {
+              URL.revokeObjectURL(url);
+              reject(new Error('Could not load audio'));
+            };
+          } catch (err) {
+            reject(err);
+          }
+        });
+      }
+
+      function chips(id, arr) {
+        const wrap = document.getElementById(id);
+        if (!wrap) return;
+        wrap.innerHTML = '';
+        const list = Array.isArray(arr) ? arr : [];
+        list.filter(Boolean).forEach(txt => wrap.appendChild(chip(txt)));
+      }
+
+      function chip(txt) {
+        const d = document.createElement('div');
+        d.className = 'chip';
+        d.textContent = txt;
+        return d;
+      }
+
+      function escapeHtml(str) {
+        return String(str || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function fmt(v, digits = 0) {
+        if (v === undefined || v === null || Number.isNaN(v)) return '—';
+        const n = Number(v);
+        return digits ? n.toFixed(digits) : Math.round(n);
+      }
+
+      function clamp(n, a, b) {
+        return Math.min(Math.max(n, a), b);
+      }
+
+      function formatTiming(timing = {}) {
+        if (!timing || typeof timing !== 'object') return '';
+        const prep = timing.prep_ms ? `Prep ${Math.round(timing.prep_ms / 1000)}s` : null;
+        const asr = timing.asr_ms ? `ASR ${Math.round(timing.asr_ms / 1000)}s` : null;
+        const total = timing.total_ms ? `Total ${(timing.total_ms / 1000).toFixed(1)}s` : null;
+        return [prep, asr, total].filter(Boolean).join(' • ');
+      }
+
+      function safe(fn, context) {
+        try {
+          fn();
+        } catch (err) {
+          console.error(`ExamPrep render issue in ${context}`, err);
+        }
+      }
+
+      function showError(msg) {
+        toggleCards('error');
+        const errEl = document.getElementById('errorMsg');
+        if (errEl) errEl.textContent = msg;
+        if (cardErr && typeof cardErr.scrollIntoView === 'function') {
+          cardErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+
+      function resetError() {
+        cardErr.style.display = 'none';
+      }
+
+      function friendlyErrorMessage(raw) {
+        const text = String(raw || '').trim();
+        const lower = text.toLowerCase();
+        if (!text) return 'Could not analyze this audio. Please try another file.';
+        if (lower.includes('duration_exceeds_limit')) {
+          return 'Audio is longer than 3 minutes. Please upload a shorter recording.';
+        }
+        if (lower.includes('unsupported_media_type')) {
+          return 'Unsupported audio type. Try WAV, MP3, or M4A.';
+        }
+        if (lower.includes('could_not_read_audio')) {
+          return 'We could not read that audio file. Convert it to WAV or ensure ffmpeg is installed, then try again.';
+        }
+        if (lower.includes('asr_failed')) {
+          return 'Speech-to-text failed. Check your ASR provider settings or API key.';
+        }
+        if (lower.includes('auth_unreachable') || lower.includes('invalid_auth')) {
+          return 'We could not verify your session. Please sign in again.';
+        }
+        if (lower.startsWith('http ')) {
+          return `Analysis failed with server status ${text.replace('HTTP ', '')}.`;
+        }
+        if (lower.includes('failed to fetch')) {
+          return 'Could not reach the backend. Make sure the server is running on http://127.0.0.1:5173.';
+        }
+        return `Analysis failed: ${text}`;
+      }
+
+      function extractFile(dataTransfer) {
+        if (!dataTransfer) return Promise.resolve(null);
+        if (dataTransfer.files && dataTransfer.files.length > 0) {
+          return Promise.resolve(dataTransfer.files[0]);
+        }
+        if (dataTransfer.items && dataTransfer.items.length > 0) {
+          for (const item of dataTransfer.items) {
+            if (item.kind === 'file') {
+              const file = item.getAsFile();
+              if (file) return Promise.resolve(file);
+              if (typeof item.webkitGetAsEntry === 'function') {
+                const entry = item.webkitGetAsEntry();
+                if (entry && entry.isFile) {
+                  return new Promise((resolve, reject) => {
+                    try {
+                      entry.file(resolve, reject);
+                    } catch (err) {
+                      reject(err);
+                    }
+                  });
+                }
+              }
+            }
+          }
+        }
+        return Promise.resolve(null);
+      }
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.addEventListener('message', event => {
+          const data = event.data;
+          if (!data) return;
+          if (data.type === 'progress') {
+            setProgress(data.value || 0);
+            highlightStep(data.step);
+          }
+        });
+      }
+
+      function resolveApi() {
+        const attr = (document.body.getAttribute('data-api-base') || '').trim();
+        const globalCfg =
+          typeof window !== 'undefined' && window.EXAMPREP_API_BASE
+            ? String(window.EXAMPREP_API_BASE).trim()
+            : '';
+
+        let base = attr || globalCfg;
+
+        if (!base) {
+          const protocol = typeof location !== 'undefined' ? location.protocol : '';
+          const hostname = typeof location !== 'undefined' ? location.hostname : '';
+          const host = typeof location !== 'undefined' ? location.host : '';
+          const isFile = protocol === 'file:';
+          const normalizedHost = hostname.replace(/^\[/, '').replace(/\]$/, '');
+          const isLoopback =
+            normalizedHost === 'localhost' ||
+            normalizedHost === '127.0.0.1' ||
+            normalizedHost === '::1' ||
+            normalizedHost === '::' ||
+            normalizedHost === '0.0.0.0' ||
+            !host;
+
+          if (isFile || isLoopback) {
+            base = 'http://127.0.0.1:5173';
+          }
+        }
+
+        if (!base) {
+          throw new Error('API base could not be resolved. Set data-api-base or window.EXAMPREP_API_BASE.');
+        }
+
+        return `${base.replace(/\/$/, '')}/process-audio`;
+      }
+
+      initAuth();
+      setup();
+
+      window.addEventListener(
+        'dragover',
+        e => {
+          e.preventDefault();
+        },
+        false
+      );
+
+      window.addEventListener(
+        'drop',
+        e => {
+          if (!drop || !drop.contains(e.target)) {
+            e.preventDefault();
+          }
+        },
+        false
+      );
+</script>
+</body>
+</html>

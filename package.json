@@ -1,0 +1,8 @@
+{
+  "scripts": {
+    "build:frontend": "node scripts/build-frontend.mjs"
+  },
+  "devDependencies": {
+    "node-fetch": "^3.3.2"
+  }
+}

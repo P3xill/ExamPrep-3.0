@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: examprep-backend
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn backend.app:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.6
+# Configure secrets (OPENAI_API_KEY, CLERK_SECRET_KEY, etc.) from the Render dashboard.
