@@ -128,6 +128,7 @@ This repo now includes deployment helpers for a Render (backend) + Netlify (fron
    - Copies `frontend/` into `dist/`
    - Injects `EXAMPREP_API_BASE` into `try.html`
 4. Netlify serves `dist/` as static output. After deployment, `try.html` posts to `<EXAMPREP_API_BASE>/process-audio`.
+5. Netlify autodetects `requirements.txt`; to keep packages compatible, the config pins `PYTHON_VERSION=3.11.6` (see `netlify.toml`). Make sure that environment variable is visible in the UI if you override settings there.
 
 Local preview of the Netlify build:
 

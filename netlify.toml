@@ -3,3 +3,6 @@
   publish = "dist"
 
 # The build will fail until EXAMPREP_API_BASE is provided via Netlify env vars.
+
+[build.environment]
+  PYTHON_VERSION = "3.11.6"
