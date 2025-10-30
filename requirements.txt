@@ -7,3 +7,5 @@ librosa
 openai
 language_tool_python
 mutagen
+httpx
+PyJWT
